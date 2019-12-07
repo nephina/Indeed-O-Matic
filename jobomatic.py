@@ -7,13 +7,14 @@ import numpy as np
 
 
 SEARCH_POSITIONS = ['Mechanical+Engineer','CFD','Simulation',
-                    'Mechatronics+Engineer','Aerospace+Engineer']
+                    'Mechatronics','Aerospace']
 
 SEARCH_LOCATIONS = ['Milwaukee','Minneapolis','Seattle','Denver','San+Diego',
                     'San+Francisco','Chicago','Philadelphia','Palo+Alto',
-                    'Rochester','San+Jose','Madison','Dayton']
+                    'Toronto','San+Jose','Madison','Dayton','Portland',
+                    'Boston','Vancouver']
 
-EXLUDE_TERMS = ['senior', 'intern', 'contract', 'staff','co-op','coop','sr.',
+EXLUDE_TERMS = ['senior', 'contract', 'staff','co-op','coop','sr.',
                 'legos','solidworks','industrial engineer','manager','sr ',
                 'electrical engineer','postdoctoral','postdoc','post-doctoral',
                 'phd','army','director','building','agriculture','customer',
@@ -23,7 +24,7 @@ EXLUDE_TERMS = ['senior', 'intern', 'contract', 'staff','co-op','coop','sr.',
                 'principal','graphics','instructor','engineer electrical',
                 'operator','accountant','analog','antenna','clinical','cook',
                 'cyber','fpga','front end','full stack','nanny','gameplay',
-                'game','hpc','hvac','circuit','intellectual property',
+                'game',' hpc ','hvac','circuit','intellectual property',
                 'web developer','III','front-end','back end','back-end',
                 'lifeguard','vfx','learning','lecturer','library',
                 'locomotive','math','multimedia','network','nuclear','optical',
@@ -209,16 +210,19 @@ def scrape_jobs(position,location,list_of_positions):
                                     +'&l='+location+'&start=0')
     current_search_positions = search_job_page(position,location,webpage,
         html_doc,list_of_positions)
-    list_of_positions = np.append(list_of_positions,current_search_positions,axis=0)
-    print('\nwriting positions from search of \"'+position.replace('+', ' ')
-            +'\" in \"'+location.replace('+', ' ')+'\"\n')
-    write_to_csv(current_search_positions)
+    if current_search_positions:
+        for row in current_search_positions:
+            list_of_positions.append(row)
+        print('\nwriting positions from search of \"'+position.replace(
+            '+', ' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
+        write_to_csv(current_search_positions)
+    else:
+        print('No positions to write from search of \"'+position.replace(
+            '+',' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
 
 
 
-list_of_positions = [['Position','Company','Location','Salary',
-                       'Company rating','Apply from Indeed?','Summary','URL',
-                       'SearchPosition','SearchLocation','Rating']]
+list_of_positions = []
 
 with open('Listings.csv', mode='w') as listings:
         listing_writer = csv.writer(listings, delimiter=',', quotechar='"',
