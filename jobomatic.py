@@ -3,38 +3,16 @@ import urllib.request as ur
 import csv
 import time
 import rankingsystem as rank
-import numpy as np
+import pandas
 
 
-SEARCH_POSITIONS = ['Mechanical+Engineer','CFD','Simulation',
-                    'Mechatronics','Aerospace']
+SEARCH_POSITIONS = [x for x in pandas.read_csv(
+    'SearchPositions.csv').to_dict()]
 
-SEARCH_LOCATIONS = ['Milwaukee','Minneapolis','Seattle','Denver','San+Diego',
-                    'San+Francisco','Chicago','Philadelphia','Palo+Alto',
-                    'Toronto','San+Jose','Madison','Dayton','Portland',
-                    'Boston','Vancouver']
+SEARCH_LOCATIONS = [x for x in pandas.read_csv(
+    'SearchLocations.csv').to_dict()]
 
-EXLUDE_TERMS = ['senior', 'contract', 'staff','co-op','coop','sr.',
-                'legos','solidworks','industrial engineer','manager','sr ',
-                'electrical engineer','postdoctoral','postdoc','post-doctoral',
-                'phd','army','director','building','agriculture','customer',
-                'dean','embedded systems','hotel','firmware','maintenance',
-                'architect','packaging','plumbing','electronics','quality',
-                'principal','software','civil','professor','teacher',
-                'principal','graphics','instructor','engineer electrical',
-                'operator','accountant','analog','antenna','clinical','cook',
-                'cyber','fpga','front end','full stack','nanny','gameplay',
-                'game',' hpc ','hvac','circuit','intellectual property',
-                'web developer','III','front-end','back end','back-end',
-                'lifeguard','vfx','learning','lecturer','library',
-                'locomotive','math','multimedia','network','nuclear','optical',
-                'optics','surgery','nursing','occupational','fellowship',
-                'attorney','perfusionist','administrator','project engineer',
-                'psychology','radar','real estate','residency','sales',
-                'safety','teaching','traffic','trainer','training',
-                'truck driver','unity','president','officer','vp ','warfare',
-                'weapon','munition']
-
+EXLUDE_TERMS = [x for x in pandas.read_csv('JobExclusionTerms.csv').to_dict()]
 
 
 class Listing:
@@ -115,7 +93,7 @@ class Listing:
         position = self.jobtitle().lower()
         #Define a function to check if a job title is worth checking out
         for word in EXLUDE_TERMS:
-            if word in position: return False
+            if word.lower() in position: return False
         return True
 
     def pay_qualifies(self):
@@ -172,6 +150,7 @@ def search_job_page(position,location,webpage,html_doc,list_of_positions):
                              foundjob.salary(),
                              foundjob.rating(),
                              foundjob.can_apply_w_Indeed(),
+                             'No',
                              foundjob.summary(),
                              foundjob.url(),
                              position,
@@ -221,15 +200,38 @@ def scrape_jobs(position,location,list_of_positions):
             '+',' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
 
 
+def read_listings():
+    try:
+        listings = pandas.read_csv('Listings.csv').to_dict()
+        columns = ['Position','Company','Location','Salary',
+                   'Company rating','Apply from Indeed?','Applied?',
+                   'Summary','URL','SearchPosition','SearchLocation',
+                   'Rating']
+        positions = []
+        for row in range(len(listings['Position'])):
+            position = []
+            for column in range(len(columns)):
+                position.append(listings[columns[column]][row])
+            positions.append(position)
+        return positions
+    except:
+        return None
 
-list_of_positions = []
 
-with open('Listings.csv', mode='w') as listings:
-        listing_writer = csv.writer(listings, delimiter=',', quotechar='"',
-                                    quoting=csv.QUOTE_MINIMAL)
-        listing_writer.writerow(['Position','Company','Location','Salary',
-                       'Company rating','Apply from Indeed?','Summary','URL',
-                       'SearchPosition','SearchLocation','Rating'])
+
+old_positions = read_listings()
+list_of_positions = old_positions
+
+if not old_positions:
+    list_of_positions = []
+    print('First run of job search\n')
+    with open('Listings.csv', mode='w') as listings:
+            listing_writer = csv.writer(listings, delimiter=',', quotechar='"',
+                                        quoting=csv.QUOTE_MINIMAL)
+            listing_writer.writerow(['Position','Company','Location','Salary',
+                           'Company rating','Apply from Indeed?','Applied?',
+                           'Summary','URL','SearchPosition','SearchLocation',
+                           'Rating'])
 
 for position in SEARCH_POSITIONS:
     for location in SEARCH_LOCATIONS:
