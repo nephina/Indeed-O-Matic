@@ -48,6 +48,13 @@ def company_rating_multiplier(positions):
             positions['Rating'][row] = float(positions['Rating'][row])*1.3
     return positions
 
+def location_rating_multiplier(positions):
+    print('Applying location rating multiplier')
+    for row in range(len(positions['Rating'])):
+        if str(positions['SearchLocation'][row]) == 'Milwaukee':
+            positions['Rating'][row] = 10*float(positions['Rating'][row])
+    return positions
+
 def rank_positions():
     positions = pandas.read_csv('Listings.csv').to_dict()
     for row in range(len(positions['Rating'])):
@@ -55,6 +62,7 @@ def rank_positions():
     positions = company_multiplier(positions)
     positions = summary_multiplier(positions)
     positions = company_rating_multiplier(positions)
+    positions = location_rating_multiplier(positions)
     write_to_csv(positions)
 
 def write_to_csv(positions):
