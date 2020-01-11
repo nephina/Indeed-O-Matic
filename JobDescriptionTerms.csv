@@ -1,120 +1,190 @@
 Term,Rating
- Wing ,2
-Turbo,2
- Engine ,2
-Fluid,2
-Teach,0.1
-Fuselage,1.5
- PE ,0.5
- Creo,0.7
- Maintenance ,0.5
-food,0.4
-beverage,0.4
- Manufacturing ,2
  3D Printing ,2
- casual ,1.5
- flexible ,1.5
- openfoam ,2
- CFD ,4
- turbulence ,1.5
- art ,0.1
- data ,1.5
- research ,2
-r&d,2
-motor,0.7
- electr,0.8
- Fusion360 ,1.3
- China ,2
- Vietnam ,1.5
- asia ,1.5
- hvac ,0.3
- plc ,0.3
- professional engineer ,0.7
+ 3G ,0.3
+ 4G ,0.3
+ 5G ,0.3
  additive manufacturing ,2
- sales ,0.3
- combustion ,1.5
- travel ,2
-on call,0.7
- bio,0.3
- testing ,1.5
- python ,2
- coding ,1.5
- FEA ,0.8
-financ,0.3
-linux,1.2
-unix,1.2
- iot ,0.6
- RF ,0.5
- data entry ,0.3
- waste ,0.2
- mentoring ,0.3
-struct,0.6
-dynamics,2
-thermo,1.5
-aero,2
-thermal,0.8
- FEA ,0.8
-cyber,0.5
- IT ,0.5
-infrastructure,0.7
-repair,0.7
- inspect,0.5
- model,1.5
- simulat,3
-algorithm,1.5
-wind tunnel,1.5
- rocket ,1.5
- nozzle ,1.5
- propulsion ,1.5
-hypersonic,1.5
-supersonic,1.5
-openfoam,2
-subsonic,1.5
-navigation,0.7
-guidance,0.9
- electr,0.6
- fixtur,0.5
- tool,0.8
- sql ,0.3
-satellites,0.8
- radar ,0.6
- sheet ,0.7
-3D print,1.3
- computer ,0.7
- optimiz,1.5
- laser,1.2
- photogrammetry ,1.1
-3D scanning ,1.1
- flow ,1.5
- transient ,1.3
- meshing ,1.3
- Post-processing ,1.3
- parametr,1.2
- turbine,1.4
- wind tunnel,1.4
- Hands-on ,1.5
- connector,0.5
-hydraulic,0.5
-pneumatic,0.5
- logic ,0.5
- board ,0.5
- wafer ,0.5
- imag,0.8
- shock,1.2
- financ,0.3
- complia,0.6
- automot,0.8
-velocimetry,2
- PIV ,2
- CNC ,1.2
- laser ,1.2
-verification and validation,1.5
-V&V,1.5
+ aerospace ,2
+ airfoil,3
+ analog ,0.5
  appliance ,0.7
- refrigeration ,0.7
+ art ,0.1
+ artist,0.3
+ asia ,1.5
+ ASIC ,0.3
+ automot,0.8
+ battery ,0.7
+ bid ,0.3
+ bio,0.3
+ blade ,1.3
+ board ,0.5
+ budget ,0.7
+ casual ,1.5
+ cell culture ,0.3
+ CFD ,4
+ chemist,0.8
+ China ,2
+ circuit ,0.4
+ civil ,0.6
+ CNA ,0.1
+ CNC ,1.2
+ code ,1.5
+ coding ,1.5
+ combustion ,1.5
+ complia,0.6
+ computer ,0.7
+ concrete ,0.4
+ connector,0.5
+ consumer ,0.3
+ Creo,0.7
+ data ,1.5
+ data entry ,0.3
+ electr,0.8
+ Engine ,2
+ environmental ,0.5
  factory ,0.6
- supply chain,0.5
+ FEA ,0.8
+ fixtur,0.5
+ flexible ,1.5
+ flow ,1.5
+ forming ,0.6
+ fpga ,0.4
+ Fusion360 ,1.3
+ gene ,0.3
+ geolog,0.3
+ Hands-on ,1.5
+ hospital ,0.2
+ hvac ,0.3
+ imag,0.8
+ inspect,0.5
+ intelligence ,0.8
+ iot ,0.6
+ IT ,0.5
+ land ,0.3
+ laser,1.2
+ laser ,1.2
+ logic ,0.5
  logistic,0.8
+ Maintenance ,0.5
+ Manufacturing ,2
+ market ,0.3
+ mentoring ,0.3
+ meshing ,1.3
+ mixed signal,0.3
+ Mixed-signal ,0.3
+ model,1.5
+ mortgage ,0.3
  network,0.7
- transonic ,1.5
+ nozzle ,1.5
+ nursing ,0.1
+ openfoam ,2
+ optimiz,1.5
+ parametr,1.2
+ patient ,0.3
+ PE ,0.5
+ pharmac,0.3
+ photogrammetry ,1.1
+ PIV ,2
+ plc ,0.3
+ plumb,0.8
+ Post-processing ,1.3
+ power ,0.8
+ professional engineer ,0.7
+ propulsion ,1.5
+ protein,0.3
+ python ,2
+ radar ,0.6
+ recruitment ,0.3
+ refrigeration ,0.7
+ regulat,0.8
+ research ,2
+ RF ,0.5
+ rocket ,1.5
+ routing ,0.4
+ sales ,0.3
+ school,0.5
+ sheet ,0.7
+ shock,1.2
+ simulat,3
+ smartphone,0.4
  sonic ,1.5
+ sql ,0.3
+ stamping ,0.6
+ supply chain,0.5
+ survey,0.7
+ tablet,0.4
+ testing ,1.5
+ tool,0.8
+ toxic,0.2
+ trading ,0.3
+ transient ,1.3
+ transonic ,1.5
+ travel ,2
+ turbine,1.4
+ turbulence ,1.5
+ uav,2
+ ui ,0.4
+ ui/ux ,0.4
+ ux ,0.4
+ Vietnam ,1.5
+ wafer ,0.5
+ waste ,0.2
+ wifi ,0.4
+ wind tunnel,1.4
+ Wing ,2
+ writer ,0.5
+3D print,1.3
+3D scanning ,1.1
+actor,0.2
+aero,2
+algorithm,1.5
+animation,0.3
+beam ,0.6
+beverage,0.4
+cyber,0.5
+database,0.7
+dynamics,2
+entertainment,0.3
+financ,0.3
+firewall,0.3
+Fluid,2
+food,0.4
+Fuselage,1.5
+guidance,0.9
+highway,0.4
+hydraulic,0.5
+hydrolog,0.7
+hypersonic,1.5
+IC layout,0.3
+infrastructure,0.7
+inventory,0.4
+linux,1.2
+medicine,0.5
+motor,0.7
+navigation,0.7
+on call,0.7
+openfoam,2
+photonic,0.6
+physiology,0.5
+pneumatic,0.5
+r&d,2
+repair,0.7
+required to be currently enrolled,0.5
+rigger,0.2
+road,0.4
+satellites,0.8
+sql,0.3
+stormwater,0.5
+struct,0.6
+subsonic,1.5
+supersonic,1.5
+Teach,0.1
+thermal,0.8
+thermo,1.5
+Turbo,2
+unix,1.2
+V&V,1.5
+velocimetry,2
+verification and validation,1.5
+vtol,2
+wind tunnel,2

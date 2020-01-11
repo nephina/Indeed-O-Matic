@@ -53,6 +53,8 @@ def location_rating_multiplier(positions):
     for row in range(len(positions['Rating'])):
         if str(positions['SearchLocation'][row]) == 'Milwaukee':
             positions['Rating'][row] = 10*float(positions['Rating'][row])
+        elif str(positions['SearchLocation'][row]) == 'Chicago':
+            positions['Rating'][row] = 5*float(positions['Rating'][row])
     return positions
 
 def rank_positions():

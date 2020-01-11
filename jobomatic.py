@@ -96,14 +96,6 @@ class Listing:
             if word.lower() in position: return False
         return True
 
-    def pay_qualifies(self):
-        salary = self.salary()
-        #Define a function to check if a job title is worth checking out
-        if salary < 50000 : return False
-        elif salary >= 50000: return True
-
-
-
 
 
 def search_job_page(position,location,webpage,html_doc,list_of_positions):
@@ -122,7 +114,6 @@ def search_job_page(position,location,webpage,html_doc,list_of_positions):
                     +location+'&start='+str(pgno))
             except:
                 print('Failed to read page')
-                break
         for job in webpage.find_all(class_='result'):
 
             foundjob = Listing(job)
