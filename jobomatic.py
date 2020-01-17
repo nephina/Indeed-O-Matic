@@ -4,7 +4,7 @@ import csv
 import time
 import rankingsystem as rank
 import pandas
-
+import re
 
 SEARCH_POSITIONS = [x for x in pandas.read_csv(
     'SearchPositions.csv').to_dict()]
@@ -44,6 +44,7 @@ class Listing:
             city = self.joblisting.find(
                         class_='location accessible-contrast-color-location'
                         ).get_text().strip()
+            city = re.sub(r'[^\S]+\([^)]*\)', '', city)
         except:
             city = ''
         return city
@@ -109,24 +110,24 @@ class Listing:
 
 
 def record_position(foundjob,list_of_positions,current_search_positions):
-    this_position = foundjob.url()
+    this_position = [foundjob.jobtitle(),
+                     foundjob.company(),
+                     foundjob.city()]
 
     already_found = False
     for row in list_of_positions:
-        if row[8] == this_position:
+        if row[0:3] == this_position:
             already_found = True
             break
     for row in current_search_positions:
-        if row[8] == this_position:
+        if row[0:3] == this_position:
             already_found = True
             break
     if not already_found:
             current_search_positions.append(
-                [foundjob.jobtitle(),
-                 foundjob.company(),
-                 foundjob.city(),
-                 foundjob.salary(),
-                 foundjob.rating(),
+                [this_position[0],
+                 this_position[1],
+                 this_position[2],
                  foundjob.can_apply_w_Indeed(),
                  'No',
                  foundjob.summary(),
@@ -135,9 +136,9 @@ def record_position(foundjob,list_of_positions,current_search_positions):
                  location,
                  1])
 
-            print(current_search_positions[-1][0],
-                  current_search_positions[-1][1],
-                  current_search_positions[-1][2])
+            print(this_position[0],
+                  this_position[1],
+                  this_position[2])
     return current_search_positions
 
 
