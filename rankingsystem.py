@@ -65,6 +65,8 @@ def rank_positions():
     positions = summary_multiplier(positions)
     positions = company_rating_multiplier(positions)
     positions = location_rating_multiplier(positions)
+    positions = pandas.DataFrame(positions).sort_values(by=['Rating'],
+        ascending=False).reset_index()
     write_to_csv(positions)
 
 def write_to_csv(positions):

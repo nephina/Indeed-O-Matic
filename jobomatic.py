@@ -95,7 +95,50 @@ class Listing:
         for word in EXLUDE_TERMS:
             if word.lower() in position: return False
         return True
+    def check_if_expired(self):
+        try:
+            link = self.joblisting.find(class_="turnstileLink")
+            jobpage,jobhtml_doc = validate_url("http://www.indeed.com"
+                                                +link.get('href'))
+            if jobpage.find(class_='jobsearch-JobInfoHeader-expiredHeader'):
+                return False
+            else:
+                return True
+        except:
+                return True
 
+
+def record_position(foundjob,list_of_positions,current_search_positions):
+    this_position = foundjob.url()
+
+    already_found = False
+    for row in list_of_positions:
+        if row[8] == this_position:
+            already_found = True
+            break
+    for row in current_search_positions:
+        if row[8] == this_position:
+            already_found = True
+            break
+    if not already_found:
+            current_search_positions.append(
+                [foundjob.jobtitle(),
+                 foundjob.company(),
+                 foundjob.city(),
+                 foundjob.salary(),
+                 foundjob.rating(),
+                 foundjob.can_apply_w_Indeed(),
+                 'No',
+                 foundjob.summary(),
+                 foundjob.url(),
+                 position,
+                 location,
+                 1])
+
+            print(current_search_positions[-1][0],
+                  current_search_positions[-1][1],
+                  current_search_positions[-1][2])
+    return current_search_positions
 
 
 def search_job_page(position,location,webpage,html_doc,list_of_positions):
@@ -119,38 +162,8 @@ def search_job_page(position,location,webpage,html_doc,list_of_positions):
             foundjob = Listing(job)
 
             if(foundjob.position_qualifies()):
-
-                this_position = [foundjob.jobtitle(),
-                                 foundjob.company(),
-                                 foundjob.city()]
-
-                already_found = False
-                for row in list_of_positions:
-                    if row[0:3] == this_position:
-                        already_found = True
-                        break
-                for row in current_search_positions:
-                    if row[0:3] == this_position:
-                        already_found = True
-                        break
-                if already_found == False:
-                        current_search_positions.append(
-                            [this_position[0],
-                             this_position[1],
-                             this_position[2],
-                             foundjob.salary(),
-                             foundjob.rating(),
-                             foundjob.can_apply_w_Indeed(),
-                             'No',
-                             foundjob.summary(),
-                             foundjob.url(),
-                             position,
-                             location,
-                             1])
-
-                        print(this_position[0],
-                              this_position[1],
-                              this_position[2])
+                current_search_positions = record_position(
+                    foundjob,list_of_positions,current_search_positions)
 
     return current_search_positions
 
@@ -200,10 +213,12 @@ def read_listings():
                    'Rating']
         positions = []
         for row in range(len(listings['Position'])):
-            position = []
-            for column in range(len(columns)):
-                position.append(listings[columns[column]][row])
-            positions.append(position)
+            if str(listings['Applied?'][row]).lower() == 'yes':
+                position = []
+                for column in range(len(columns)):
+                    position.append(listings[columns[column]][row])
+                positions.append(position)
+        print('You have applied to {} positions.\n'.format(len(positions)))
         return positions
     except:
         return None
@@ -212,8 +227,17 @@ def read_listings():
 
 old_positions = read_listings()
 list_of_positions = old_positions
+if old_positions:
+    with open('Listings.csv', mode='w') as listings:
+            listing_writer = csv.writer(listings, delimiter=',', quotechar='"',
+                                        quoting=csv.QUOTE_MINIMAL)
+            listing_writer.writerow(['Position','Company','Location','Salary',
+                           'Company rating','Apply from Indeed?','Applied?',
+                           'Summary','URL','SearchPosition','SearchLocation',
+                           'Rating'])
+    write_to_csv(list_of_positions)
 
-if not old_positions:
+elif not old_positions:
     list_of_positions = []
     print('First run of job search\n')
     with open('Listings.csv', mode='w') as listings:
