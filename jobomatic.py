@@ -18,7 +18,7 @@ class Listing:
     'A definition and properties of Indeed job listings.'
 
     EXLUDE_TERMS = [x for x in pandas.read_csv('JobExclusionTerms.csv').to_dict()]
-    
+
     def __init__(self,joblisting): # Takes in single results from Indeed:
                                     # webpage.find_all(class_='result')
         self.joblisting = joblisting
@@ -93,7 +93,7 @@ class Listing:
     def position_qualifies(self):
         position = self.jobtitle().lower()
         #Define a function to check if a job title is worth checking out
-        for word in EXLUDE_TERMS:
+        for word in self.EXLUDE_TERMS:
             if word.lower() in position: return False
         return True
     def check_if_expired(self):
