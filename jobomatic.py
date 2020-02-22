@@ -12,13 +12,13 @@ SEARCH_POSITIONS = [x for x in pandas.read_csv(
 SEARCH_LOCATIONS = [x for x in pandas.read_csv(
     'SearchLocations.csv').to_dict()]
 
-EXLUDE_TERMS = [x for x in pandas.read_csv('JobExclusionTerms.csv').to_dict()]
-
 
 class Listing:
 
     'A definition and properties of Indeed job listings.'
 
+    EXLUDE_TERMS = [x for x in pandas.read_csv('JobExclusionTerms.csv').to_dict()]
+    
     def __init__(self,joblisting): # Takes in single results from Indeed:
                                     # webpage.find_all(class_='result')
         self.joblisting = joblisting
