@@ -2,9 +2,11 @@ from bs4 import BeautifulSoup as bs
 import urllib.request as ur
 import csv
 import time
-import rankingsystem as rank
 import pandas
 import re
+
+import rankingsystem as rank
+from models import *
 
 SEARCH_POSITIONS = [x for x in pandas.read_csv(
     'SearchPositions.csv').to_dict()]

@@ -101,7 +101,8 @@ class Listing:
         except:
                 return True
 
-def record_position(foundjob,list_of_positions,current_search_positions):
+def record_position(position,location,
+foundjob,list_of_positions,current_search_positions):
     this_position = [foundjob.jobtitle(),
                      foundjob.company(),
                      foundjob.city(),
@@ -159,7 +160,8 @@ def search_job_page(position,location,webpage,html_doc,list_of_positions):
 
             if(foundjob.position_qualifies()):
                 current_search_positions = record_position(
-                    foundjob,list_of_positions,current_search_positions)
+                    position,location,foundjob,
+                    list_of_positions,current_search_positions)
 
     return current_search_positions
 
