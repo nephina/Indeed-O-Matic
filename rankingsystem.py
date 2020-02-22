@@ -2,7 +2,7 @@ import pandas
 import csv
 
 def summary_multiplier(positions):
-    summary_terms = pandas.read_csv('JobDescriptionTerms.csv').to_dict()
+    summary_terms = pandas.read_csv('JobDescriptionTerms.csv', encoding='ISO-8859-1').to_dict()
     print('Applying summary key terms multiplier')
     for row in range(len(positions['Summary'])):
         for word in range(len(summary_terms['Term'])):
@@ -12,7 +12,7 @@ def summary_multiplier(positions):
 
 
 def company_multiplier(positions):
-    company_rating = pandas.read_csv('CompanyRatings.csv').to_dict()
+    company_rating = pandas.read_csv('CompanyRatings.csv', encoding='ISO-8859-1').to_dict()
     new_companies = []
     print('Applying company multiplier')
     for row in range(len(positions['Rating'])):
@@ -58,7 +58,7 @@ def location_rating_multiplier(positions):
     return positions
 
 def rank_positions():
-    positions = pandas.read_csv('Listings.csv').to_dict()
+    positions = pandas.read_csv('Listings.csv', encoding='ISO-8859-1').to_dict()
     for row in range(len(positions['Rating'])):
         positions['Rating'][row] = 1.0
     positions = company_multiplier(positions)
