@@ -1,10 +1,10 @@
 from bs4 import BeautifulSoup as bs
 import urllib.request as ur
 import csv
-import time
-import rankingsystem as rank
 import pandas
 import re
+
+import rankingsystem as rank
 
 class Listing:
 
