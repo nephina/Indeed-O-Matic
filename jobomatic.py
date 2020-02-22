@@ -1,9 +1,5 @@
-from bs4 import BeautifulSoup as bs
-import urllib.request as ur
 import csv
-import time
 import pandas
-import re
 
 import rankingsystem as rank
 from models import *
