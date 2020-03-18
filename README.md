@@ -1,4 +1,4 @@
-# Initial page
+# Readme
 
 ## How To Use
 
