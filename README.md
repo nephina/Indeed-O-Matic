@@ -1,25 +1,20 @@
+---
+description: Job scraper for Indeed with keyword-weight-based job ranking
+---
+
 # Initial page
 
-## Getting Super Powers
+## How To Use
 
-Becoming a super hero is a fairly straight forward process:
+First make sure you have all the relevant packages:
 
 ```
-$ give me super-powers
+$ pip install bs4 urllib csv pandas re
 ```
 
 {% hint style="info" %}
- Super-powers are granted randomly so please submit an issue if you're not happy with yours.
+ You may need to use pip3 if pip defaults to Python 2, this code is written in Python 3.6 and has not been tested in any other version
 {% endhint %}
 
-Once you're strong enough, save the world:
-
-{% code title="hello.sh" %}
-```bash
-# Ain't no code for that yet, sorry
-echo 'You got to trust me on this, I saved the world'
-```
-{% endcode %}
-
-
+To start, you will need to set up your SearchLocations and SearchPositions files:
 
