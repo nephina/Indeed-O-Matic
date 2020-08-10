@@ -7,11 +7,10 @@ class CNN(nn.Module):
                  dropout, pad_idx):
 
         super().__init__()
-
+        self.num_layers = 3
         self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx = pad_idx)
         kernel_dimensions = zip(filter_sizes,dilation_sizes)
-        #for (fs,ds) in kernel_dimensions:
-        #    print(int((fs*ss)/2))
+
         self.convs = nn.ModuleList([
                                     nn.Conv2d(in_channels = 1,
                                               out_channels = n_filters,
@@ -22,33 +21,59 @@ class CNN(nn.Module):
 
                                     for (fs,ds) in kernel_dimensions
                                     ])
-
         self.fc = nn.Linear(len(filter_sizes) * n_filters, output_dim)
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, text):
 
-        #text = [batch size, sent len]
+        '''
+        self.Conv1 = nn.Conv2d(in_channels=1,out_channels=n_filters,kernel_size=(3,1),padding=(1,0))
+        self.Conv2 = nn.Conv2d(in_channels=n_filters,out_channels=n_filters,kernel_size=(3,1),padding=(1,0))
+        self.Conv3 = nn.Conv2d(in_channels=n_filters,out_channels=n_filters,kernel_size=(3,1),padding=(1,0))
+        #self.Conv4 = nn.Conv2d(in_channels=n_filters,out_channels=n_filters,kernel_size=(3,1),padding=(1,0))
+        #self.Conv5 = nn.Conv2d(in_channels=n_filters,out_channels=n_filters,kernel_size=(3,1),padding=(1,0))
+        self.Conv6 = nn.Conv2d(in_channels=n_filters,out_channels=1,kernel_size=(3,embedding_dim),padding=(1,0))
+        '''
+
+    '''
+    def init_weights(self,val=1):
+        for m in self.modules():
+            nn.init.orthogonal_(m.weight, val)
+            torch.nn.utils.weight_norm(m)
+    '''
+
+    def forward(self, text):
 
         embedded = self.embedding(text)
 
-        #embedded = [batch size, sent len, emb dim]
-
         embedded = embedded.unsqueeze(1)
 
-        #embedded = [batch size, 1, sent len, emb dim]
+        '''
+        conved = self.Conv1(embedded)
+        conved = torch.relu(conved)
+        conved = F.avg_pool2d(conved,kernel_size=(3,1))
+        conved = self.Conv2(conved)
+        conved = torch.relu(conved)
+        conved = F.avg_pool2d(conved,kernel_size=(3,1))
+        conved = self.Conv3(conved)
+        conved = torch.relu(conved)
+        conved = F.avg_pool2d(conved,kernel_size=(3,1))
+        #conved = self.Conv4(conved)
+        #conved = torch.relu(conved)
+        #conved = F.avg_pool2d(conved,kernel_size=(3,1))
+        #conved = self.Conv5(conved)
+        #conved = torch.relu(conved)
+        #conved = F.avg_pool2d(conved,kernel_size=(3,1))
+        conved = self.Conv6(conved)
 
-        conved = [F.relu(conv(embedded)).squeeze(3) for conv in self.convs]
+        pooled = F.avg_pool1d(conved.squeeze(3), conved.shape[2]).squeeze(2)
+        return pooled
+        '''
 
-        #conved_n = [batch size, n_filters, sent len - filter_sizes[n] + 1]
+        conved = [conv(embedded).squeeze(3) for conv in self.convs]
 
-        pooled = [F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
+        pooled = [F.avg_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
 
-        #pooled_n = [batch size, n_filters]
-
-        cat = self.dropout(torch.cat(pooled, dim = 1))
-
-        #cat = [batch size, n_filters * len(filter_sizes)]
+        cat = torch.cat(pooled, dim = 1)
 
         return self.fc(cat)

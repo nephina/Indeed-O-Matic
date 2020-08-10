@@ -24,16 +24,22 @@ def train(model, iterator, optimizer, criterion):
 
         order_loss = same_order_loss(predictions,batch.Rank)
         centered_normal_loss = criterion(predictions,(torch.randn_like(predictions))).pow(2)
-        loss = order_loss+centered_normal_loss#+centered_normal_loss
-
+        loss = order_loss+centered_normal_loss
         loss.backward()
-
         optimizer.step()
-
+        model.zero_grad()
+        '''
+        if (i+1) % 10 == 0:      # Wait for several backward steps
+            for gp in model.parameters():
+                if gp.grad is not None:
+                    gp.grad = gp.grad/10
+            optimizer.step()               # Now we can do an optimizer step
+            model.zero_grad()
+        '''
         epoch_order_loss += order_loss.item()
         epoch_centered_normal_loss += centered_normal_loss.item()
         epoch_loss += loss.item()
-    return epoch_loss / len(iterator), epoch_order_loss / len(iterator), epoch_centered_normal_loss / len(iterator), epoch_acc / len(iterator)
+    return epoch_loss / len(iterator), epoch_order_loss / len(iterator), epoch_centered_normal_loss / len(iterator)
 
 def test(window,model, iterator):
 
@@ -45,7 +51,7 @@ def test(window,model, iterator):
         for i,batch in enumerate(iterator):
             predictions = model(batch.Description[0]).squeeze(1)
             for descript,loc,predict in zip(batch.Description[0],batch.SortKey,predictions):
-                test_result.append([descript,predict.item(),loc])
+                test_result.append([descript.numpy(),predict.item(),int(loc.item())])
             window.ProgressBar.setValue(i+1)
 
     return test_result
@@ -53,11 +59,11 @@ def test(window,model, iterator):
 
 def same_order_loss(output,target):
         x = -((output[0]-output[1])*(target[0]-target[1])) #positive num if wrong order, negative num if correct order
-        loss = (x*torch.sigmoid(x)).pow(3) #SiLU cubed provides high motivation to make sure all rankings are in the correct order or at least close to it, but also pushes the ones in the correct order a little bit apart as well. This outward pressure on the ranking distribution is countered by the KL Divergence loss on a normal distribution, keeping the distribution centered and pressuring it to come down to a variance of 1
+        loss = torch.exp(x)#(x*torch.sigmoid(x))*torch.exp(x) #SiLU times e^x provides high motivation to make sure all rankings are in the correct order or at least close to it, but also pushes the ones in the correct order a little bit apart as well. This outward pressure on the ranking distribution is countered by the KL Divergence loss on a normal distribution, keeping the distribution centered and pressuring it to come down to a variance of 1
         return(loss)
 
-def Trainer(window, Listings, epochs=5):
-    window.StatusText.setText('Currently in: dataset build mode')
+def Trainer(window, Listings, epochs=10,features=10):
+    window.StatusText.setText('Building Training Dataset')
     window.ProgressBar.setRange(0, 100)
     window.ProgressBar.setValue(0)
     DescriptionField = torchtext.data.Field(
@@ -101,7 +107,7 @@ def Trainer(window, Listings, epochs=5):
 
     dataset = torchtext.data.TabularDataset('Data/DescriptionAndRank.csv','CSV',skip_header=True,fields = Fields)
     trainset = torchtext.data.TabularDataset('Data/RankedPairs.csv','CSV',skip_header=True,fields = Fields)
-    window.ProgressBar.setValue(70)
+    window.ProgressBar.setValue(80)
 
     '''
     The beauty of the GloVe vocabulary model is that it has been trained to "group" certain words with other words
@@ -143,14 +149,11 @@ def Trainer(window, Listings, epochs=5):
 
     INPUT_DIM = len(DescriptionField.vocab)
     EMBEDDING_DIM = 50 # when we turned our tokens into vectors, this was the length of the vector
-    N_FILTERS = 200 # how many features the convolutions learn
-    FILTER_SIZES = [2,3,4,5,5,5,5,5,5,5] # originally this example only cared about 2,3,4 lengths, but our text examples
-    # are very large so I figured having longer representations might help certain sections with more context stand out
-    # as opposed to just simple bi/tri/quad-grams being the dominant encoding of meaning in these thousand-word
-    # job listings texts. It seemed like just way to small of a focus for a piece of text this big
-    DILATION_SIZES = [1,1,1,1,2,4,8,16,32,64] # without increasing the stride, larger kernels start to really slow things down
+    N_FILTERS = features # how many features the convolutions learn
+    FILTER_SIZES = [2,3,4,5]#,5,5,5,5,5,5]
+    DILATION_SIZES = [1,1,1,1]#,2,4,8,16,32,64]
     OUTPUT_DIM = 1
-    DROPOUT = 0.5
+    DROPOUT = 0.0
     PAD_IDX = DescriptionField.vocab.stoi[DescriptionField.pad_token]
 
     model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, DILATION_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
@@ -167,24 +170,26 @@ def Trainer(window, Listings, epochs=5):
     import torch.optim as optim
 
     optimizer = optim.Adam(model.parameters())
-
+    try:
+        model.load_state_dict(torch.load('RankPrediction-model.pkl'))
+    except:
+        print('no previously existing trained model')
     model = model.to(device)
-    criterion = nn.KLDivLoss()
-
+    criterion = nn.KLDivLoss(reduction='batchmean')
     criterion.to(device)
 
-    window.StatusText.setText('Currently in: AI training mode')
+    window.StatusText.setText('Training the Neural Net')
     window.ProgressBar.setRange(0, epochs)
     window.ProgressBar.setValue(0)
 
     for epoch in range(epochs):
 
-        train_loss, train_order_loss, train_centered_loss, train_acc = train(model, train_iterator, optimizer, criterion)
-
+        train_loss, train_order_loss, train_centered_loss = train(model, train_iterator, optimizer, criterion)
+        print(train_loss,train_order_loss,train_centered_loss)
         torch.save(model.state_dict(), 'RankPrediction-model.pkl')
         window.ProgressBar.setValue(epoch+1)
 
-    window.StatusText.setText('Currently in: job listing autorank mode')
+    window.StatusText.setText('Ranking Jobs')
     window.ProgressBar.setRange(0, len(test_iterator))
     window.ProgressBar.setValue(0)
 
@@ -193,7 +198,7 @@ def Trainer(window, Listings, epochs=5):
     PredictedPlaintextListingsandRanks = []
 
 
-    window.StatusText.setText('Currently in: vector to text mode')
+    window.StatusText.setText('Writing Ranked Jobs')
     window.ProgressBar.setRange(0, len(test_result))
     window.ProgressBar.setValue(0)
 
@@ -202,8 +207,10 @@ def Trainer(window, Listings, epochs=5):
     #Re-order the rankings from the prediction step
     test_result_df = pd.DataFrame(test_result)
     test_result_df.sort_values(by=[2],inplace=True)
-    Listings['Rating']= test_result_df[1]
+    test_result_df.reset_index(drop=True)
+    Listings['Rating']= test_result_df[1].tolist()
 
+    PredictedPlaintextListingsandRanks = []
     #for i,listing in enumerate(test_result):
     #    window.ProgressBar.setValue(i+1)
     #    location = int(listing[2].item())
