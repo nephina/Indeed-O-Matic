@@ -59,7 +59,7 @@ def test(window,model, iterator):
 
 def same_order_loss(output,target):
         x = -((output[0]-output[1])*(target[0]-target[1])) #positive num if wrong order, negative num if correct order
-        loss = torch.exp(x)#(x*torch.sigmoid(x))*torch.exp(x) #SiLU times e^x provides high motivation to make sure all rankings are in the correct order or at least close to it, but also pushes the ones in the correct order a little bit apart as well. This outward pressure on the ranking distribution is countered by the KL Divergence loss on a normal distribution, keeping the distribution centered and pressuring it to come down to a variance of 1
+        loss = (x*torch.sigmoid(x))*torch.exp(x) #SiLU times e^x provides high motivation to make sure all rankings are in the correct order or at least close to it, but also pushes the ones in the correct order a little bit apart as well. This outward pressure on the ranking distribution is countered by the KL Divergence loss on a normal distribution, keeping the distribution centered and pressuring it to come down to a variance of 1
         return(loss)
 
 def Trainer(window, Listings, epochs=10,features=10):
