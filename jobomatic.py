@@ -1,8 +1,7 @@
 import csv
 import pandas
+from methods import *
 
-import rankingsystem as rank
-from models import *
 
 SEARCH_POSITIONS = [x for x in pandas.read_csv(
     'SearchPositions.csv').to_dict()]
@@ -10,7 +9,7 @@ SEARCH_POSITIONS = [x for x in pandas.read_csv(
 SEARCH_LOCATIONS = [x for x in pandas.read_csv(
     'SearchLocations.csv').to_dict()]
 
-old_positions = read_listings()
+search_run_before, old_positions = read_listings()
 list_of_positions = old_positions
 if old_positions:
     with open('Listings.csv', mode='w') as listings:
@@ -24,7 +23,8 @@ if old_positions:
 
 elif not old_positions:
     list_of_positions = []
-    print('First run of job search\n')
+    if search_run_before == False:
+        print('First run of job search\n')
     with open('Listings.csv', mode='w') as listings:
             listing_writer = csv.writer(listings, delimiter=',', quotechar='"',
                                         quoting=csv.QUOTE_MINIMAL)
@@ -37,5 +37,4 @@ for position in SEARCH_POSITIONS:
     for location in SEARCH_LOCATIONS:
         scrape_jobs(position,location,list_of_positions)
 
-
-rank.rank_positions()
+import TrainableRanker
