@@ -7,7 +7,7 @@
 First make sure you have all the relevant packages:
 
 ```
-$ pip install bs4 urllib csv pandas re
+$ pip install bs4 urllib csv pandas re torch torchtext nltk scikit-learn numpy PyQt5
 ```
 
 {% hint style="info" %}
@@ -22,24 +22,21 @@ Next, run the code for the first time:
 $ python jobomatic.py
 ```
 
-Depending on how many cities and search positions you entered, this could take minutes to hours. I suggest starting with a limited set. After this is finished running, it will output a new Listings file. This will contain all the jobs that it found. It will also have written a list of all the companies it found to CompanyRatings. 
+{% hint style="info" %}
+You may need to use the command _python3_ if your system defaults to python2. Check which version it defaults to with _python --version_
+{% endhint %}
+
+Depending on how many cities and search positions you entered, this could take minutes to hours. Once it is done scraping Indeed for jobs, it will output a new Listings file, and then open up a window where it will prompt you to select one of the jobs.
 
 ### Personalization
 
-Now that you have these job listings, it is time to start filling out your JobExclusionTerms and JobDescriptionTerms files:
+The job listings it scraped from Indeed come in no particular order, so they are not ranked yet. That is where you come in. The window will prompt you to select your favorite of two jobs. If you find yourself spending a lot of time choosing between the two, or they are both jobs you don't like, use the "skip" button. In the backend there is an AI, specifically a neural network, which will be learning how to rank the jobs based on your preferences. If you are having trouble telling the difference, that's a good sign that it's getting it right and doesn't need to learn anything else about those jobs. And if both jobs are bad, there is no need to fill the training data with information about them because you won't care how they get ranked and they will end up at the bottom anyway.  
+  
+The AI takes input and trains in sequential steps. Each step takes 50 pairwise selections from you, and then takes some time to train the AI. At each step, you should notice the pairs of jobs becoming both better-suited to your tastes and harder to choose between. You will also notice that the AI takes longer to train as its training data builds, and as it also grows in size to accommodate the new information.
 
-1. The first is responsible for throwing out any jobs with certain terms in their job title. Your first search will probably have turned up some wildly different jobs than what you were looking for, this is where you can make sure they don't show up in future searches. Be careful with this, and use spaces if necessary because you might accidentally match something you didn't mean to \(i.e. "SR" will match other words like "grassroots" or "disrupt"\). 
-2. The second contains terms that might appear in the job description and associated multipliers that are used to determine how good of a fit this job is for you. A term that you would be happy to see in the description would be assigned a number greater than 1, a term you don't want to see is assigned a number less than 1. It's up to you to determine your own range of good to bad, the ranking system just finds whether any term occurs in the job description, and multiplies the ranking by the associated multiplier.
-
-{% hint style="info" %}
-The term multipliers for any job listing have a multiplicative effect on each other, but multiple instances of the same term are not counted.
-{% endhint %}
-
-### Further tuning and personalization
-
-The CompanyRatings file is also used to rank the job listings, it consists of a list of companies and associated weights to multiply the job rank by. I use a ranking scale of 1 to 3, but you are free to use whatever scale and resolution you would like. A 1-4 or even 1-5 scale might serve you better. How it works is that every time you run the code, it will add to the file any new companies it found. It is up to you to go through it and rank them, if you don't, it will default to listing them all as "1's." It's a lot of work \(I'm up to 8k companies already!\), so it might be simplest to just ctrl-f for the companies that you already know you like, and give them high rankings, and disregard the rest. I will say that after googling thousands of companies I'd never heard of, I have a greater appreciation for both the diversity and the blandness of the US corporate world.
-
-After you have these files filled out, it's just a matter of running it and changing it until the ranked list it spits out makes sense to you. What I like doing after running it, is that I will look at the top of the ranked list to see if there are any positions that I clearly dislike, and either enter the job title term into the JobExclusionTerms file or enter some new terms that I hadn't thought of into the JobDescriptionTerms with a low weight. Then I go to the bottom of the list, and do the same again except in reverse. Because it can take quite a long time for the scraper to run through all the cities and positions, I recommend you start with only a couple cities and positions. That way you will get a good turnaround time on your edits, and be able to arrive at a ranking system that works for you faster than otherwise.
-
+At each step, you can open the Listings.csv file to check how good it is at ranking the jobs. I have found that after a couple of steps, the AI generally has a rough grasp of what you want. At 4 steps, the AI is pretty good, but not perfect. At around 7 or 8 steps, you will start noticing that it puts jobs up top which at first you might think are errors, but if you take a closer look at the job description you are more intrigued. I haven't tested it past 8 steps, but I'm not sure there's much benefit to going past that.  
+  
+Note that this can take a while, depending on whether you're a fast or slow reader, or whether you're detail-oriented or a text-skimmer. To get through 8 steps of training, you should probably set aside an evening. The good thing is that after that training is done, you never have to train it again, unless your tastes change in a significant way and you want to retrain it. You can scrape any number of new jobs and the AI you trained once will always be able to rank them correctly.  
+  
 Have fun, happy job searching!
 
