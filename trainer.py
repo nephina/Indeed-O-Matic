@@ -2,12 +2,9 @@ import torch, torchtext, nltk
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from sklearn.metrics import accuracy_score
 import numpy as np
 import pandas as pd
 import re
-from tqdm import tqdm
-from tqdm import notebook
 from model import CNN
 
 def train(model, iterator, optimizer, criterion):
@@ -62,7 +59,7 @@ def same_order_loss(output,target):
         loss = torch.relu(x).pow(2)#(x*torch.sigmoid(x))*torch.exp(x) #SiLU times e^x provides high motivation to make sure all rankings are in the correct order or at least close to it, but also pushes the ones in the correct order a little bit apart as well. This outward pressure on the ranking distribution is countered by the KL Divergence loss on a normal distribution, keeping the distribution centered and pressuring it to come down to a variance of 1
         return(loss)
 
-def Trainer(window, Listings, epochs=10,features=10):
+def Trainer(window, Listings, features=10):
     window.StatusText.setText('Building Training Dataset')
     window.ProgressBar.setRange(0, 100)
     window.ProgressBar.setValue(0)
@@ -179,11 +176,11 @@ def Trainer(window, Listings, epochs=10,features=10):
     criterion.to(device)
 
     window.StatusText.setText('Training the Neural Net')
-    window.ProgressBar.setRange(0, epochs)
+    window.ProgressBar.setRange(0, 1)
     window.ProgressBar.setValue(0)
     epoch = 0
     train_loss = 10e10
-    while train_loss != 0 | epoch < 50*features:
+    while train_loss != 0 and epoch < 50*features:
         train_loss, train_order_loss, train_centered_loss = train(model, train_iterator, optimizer, criterion)
         print(train_loss,train_order_loss,train_centered_loss)
         torch.save(model.state_dict(), 'RankPrediction-model.pkl')

@@ -10,6 +10,12 @@ from trainer import Trainer
 
 os.environ['LRU_CACHE_CAPACITY']='5'
 
+'''
+class Intro_Screen(QDialog):
+    def __init__(self, parent=None):
+        super(Intro_Screen, self).__init__(parent)
+'''
+
 
 class Pairwise_Prompt(QDialog):
     def __init__(self, parent=None):
@@ -67,6 +73,8 @@ def Read_Listings():
 
         DescriptionAndRank = pd.DataFrame({'Description': ListingsCleaned['Position'] + ' ' + ListingsCleaned['Company'] + ' ' + ListingsCleaned['Location'] + ' ' + ListingsCleaned['Salary'] + ' ' + ListingsCleaned['Summary'],'Rating': ListingsCleaned['Rating']})
         DescriptionAndRank['SortKey'] = range(len(DescriptionAndRank))
+        if not os.path.exists('Data'):
+            os.mkdir('Data')
         DescriptionAndRank.to_csv('Data/DescriptionAndRank.csv',index=False)
 
     return Listings, Listings_len, ListingsCleaned, DescriptionAndRank
@@ -129,9 +137,8 @@ def Run_AI_Training():
     FinalRankedPairs = pd.DataFrame(Pairwise_Ranked_Listings)
     FinalRankedPairs.columns = ['Description','Rating']
     FinalRankedPairs['SortKey'] = range(len(FinalRankedPairs))
-
     FinalRankedPairs.to_csv('Data/RankedPairs.csv',index=False)
-    Trainer(window, Listings, epochs = int(len(FinalRankedPairs)/20), features = ceil(len(FinalRankedPairs)/300))
+    Trainer(window, Listings, features = ceil(len(FinalRankedPairs)/300))
     window.ProgressBar.setRange(0, 50)
     window.ProgressBar.setValue(0)
     window.StatusText.setText('Currently in: user entry mode')
@@ -142,9 +149,9 @@ def Update_Step_State(preference):
     global Pairwise_Ranked_Listings, TotalSelectionsCount
     if preference == 0:
         Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[0]],1])
-        Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[1]],-1])
+        Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[1]],0])
     else:
-        Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[0]],-1])
+        Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[0]],0])
         Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[1]],1])
     TotalSelectionsCount[0] += 1
     window.ProgressBar.setValue(TotalSelectionsCount[0])

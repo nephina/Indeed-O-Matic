@@ -69,7 +69,7 @@ class CNN(nn.Module):
         return pooled
         '''
 
-        conved = [conv(embedded).squeeze(3) for conv in self.convs]
+        conved = [torch.relu(conv(embedded)).squeeze(3) for conv in self.convs]
 
         pooled = [F.avg_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
 
