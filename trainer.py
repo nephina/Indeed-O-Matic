@@ -179,12 +179,12 @@ def Trainer(window, Listings):
 
     INPUT_DIM = len(DescriptionField.vocab)
     EMBEDDING_DIM = 50 # when we turned our tokens into vectors, this was the length of the vector
-    N_FILTERS = ceil(len(trainset)/1000) # how many features the convolutions learn
+    N_FILTERS = ceil(len(trainset)/400) # how many features the convolutions learn
     FILTER_SIZES = [1,2,3,4]#,5,5,5,5,5,5]
     DILATION_SIZES = [1,1,1,1]#,2,4,8,16,32,64]
     OUTPUT_DIM = 1
     DROPOUT = 0.0
-    PAD_IDX = DescriptionField.vocab.stoi[DescriptionField.pad_token]
+    PAD_IDX = DescriptionField.voca4.stoi[DescriptionField.pad_token]
 
     model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, DILATION_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
 
