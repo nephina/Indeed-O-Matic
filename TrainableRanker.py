@@ -275,7 +275,7 @@ Listings, Listings_len, ListingsCleaned, DescriptionAndRank = Read_Listings()
 if os.path.exists('Data/RankedPairs.csv'):
     InitialDataCollectStep = [0]
     Pairwise_Ranked_Listings = pd.read_csv('Data/RankedPairs.csv').drop(['SortKey'],axis=1).values.tolist()
-Pairwise_Ranked_Listings = Remove_Conflicts(Pairwise_Ranked_Listings)
+    Pairwise_Ranked_Listings = Remove_Conflicts(Pairwise_Ranked_Listings)
 listing_indices = Update_Both_Listings(refinement=False)
 
 sys.exit(app.exec_())
