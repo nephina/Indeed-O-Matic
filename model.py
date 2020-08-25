@@ -42,11 +42,8 @@ class CNN(nn.Module):
     '''
 
     def forward(self, text):
-
         embedded = self.embedding(text)
-
         embedded = embedded.unsqueeze(1)
-
         '''
         conved = self.Conv1(embedded)
         conved = torch.relu(conved)
@@ -69,10 +66,8 @@ class CNN(nn.Module):
         return pooled
         '''
 
-        conved = [torch.relu(conv(embedded)).squeeze(3) for conv in self.convs]
-
+        conved = [conv(embedded).squeeze(3) for conv in self.convs]
         pooled = [F.avg_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
-
         cat = torch.cat(pooled, dim = 1)
-
-        return self.fc(cat)
+        linear = self.fc(cat)
+        return linear

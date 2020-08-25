@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from math import ceil
 import re
 import random
 import sys
@@ -9,12 +8,6 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QGridLayout, QPushButton, QT
 from trainer import Trainer
 
 os.environ['LRU_CACHE_CAPACITY']='5'
-
-'''
-class Intro_Screen(QDialog):
-    def __init__(self, parent=None):
-        super(Intro_Screen, self).__init__(parent)
-'''
 
 
 class Pairwise_Prompt(QDialog):
@@ -133,12 +126,13 @@ def Update_Both_Listings(refinement=False):
     return listing_indices
 
 def Run_AI_Training():
-    global Listings, Listings_len, ListingsCleaned, DescriptionAndRank
+    global Listings, Listings_len, ListingsCleaned, DescriptionAndRank,Pairwise_Ranked_Listings
+    Pairwise_Ranked_Listings = Remove_Conflicts(Pairwise_Ranked_Listings)
     FinalRankedPairs = pd.DataFrame(Pairwise_Ranked_Listings)
     FinalRankedPairs.columns = ['Description','Rating']
     FinalRankedPairs['SortKey'] = range(len(FinalRankedPairs))
     FinalRankedPairs.to_csv('Data/RankedPairs.csv',index=False)
-    Trainer(window, Listings, features = ceil(len(FinalRankedPairs)/300))
+    Trainer(window, Listings)
     window.ProgressBar.setRange(0, 50)
     window.ProgressBar.setValue(0)
     window.StatusText.setText('Currently in: user entry mode')
@@ -155,7 +149,7 @@ def Update_Step_State(preference):
         Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[1]],1])
     TotalSelectionsCount[0] += 1
     window.ProgressBar.setValue(TotalSelectionsCount[0])
-    if TotalSelectionsCount[0] >= 50:
+    if TotalSelectionsCount[0] >= 1:
         window.LeftJobListing.setPlainText('')
         window.RightJobListing.setPlainText('')
         Run_AI_Training()
@@ -241,6 +235,29 @@ def Get_Topend_Close_Pair():
     listing_indices[1] = listing_indices[0]+1
     return Listings.iloc[listing_indices[0]],Listings.iloc[listing_indices[1]],listing_indices
 
+def Remove_Conflicts(Pairwise_Ranked_Listings):
+    from itertools import combinations
+    combs = combinations(list(range(int(len(Pairwise_Ranked_Listings)/2))),2)
+    combs = list(combs)
+    conflicting_pairs = []
+    for comb in combs:
+        pair_one = Pairwise_Ranked_Listings[int(comb[0]*2):int(comb[0]*2)+2]
+        pair_two = Pairwise_Ranked_Listings[int(comb[1]*2):int(comb[1]*2)+2]
+        if pair_one[0][0]==pair_two[0][0] and pair_one[1][0]==pair_two[1][0]:
+            if pair_one[0][1] != pair_two[0][1]:
+                conflicting_pairs.append([comb[0],comb[1]])
+                print('You had a conflict between pairs: '+str(comb[0])+' and '+str(comb[1]))
+
+        elif pair_one[0][0]==pair_two[1][0] and pair_one[1][0]==pair_two[0][0]:
+            if pair_one[0][1] != pair_two[1][1]:
+                conflicting_pairs.append([comb[0],comb[1]])
+                print('You had a conflict between pairs: '+str(comb[0])+' and '+str(comb[1]))
+
+    for resolved_num,conflict in enumerate(conflicting_pairs):
+        Pairwise_Ranked_Listings.pop(int(conflict[0]*2)-2*resolved_num)
+        Pairwise_Ranked_Listings.pop(int(conflict[0]*2)-2*resolved_num)
+    return Pairwise_Ranked_Listings
+
 
 ListingPreference=[]
 Pairwise_Ranked_Listings = []
@@ -249,11 +266,16 @@ RightSelectCount = [0]
 TotalSelectionsCount = [0]
 InitialDataCollectStep = [1]
 
+
+
 app = QApplication(sys.argv)
 window = Pairwise_Prompt()
 window.show()
-
 Listings, Listings_len, ListingsCleaned, DescriptionAndRank = Read_Listings()
+if os.path.exists('Data/RankedPairs.csv'):
+    InitialDataCollectStep = [0]
+    Pairwise_Ranked_Listings = pd.read_csv('Data/RankedPairs.csv').drop(['SortKey'],axis=1).values.tolist()
+Pairwise_Ranked_Listings = Remove_Conflicts(Pairwise_Ranked_Listings)
 listing_indices = Update_Both_Listings(refinement=False)
 
-app.exec_()
+sys.exit(app.exec_())

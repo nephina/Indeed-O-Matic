@@ -3,25 +3,55 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from math import ceil
 import pandas as pd
 import re
 from model import CNN
 
-def train(model, iterator, optimizer, criterion):
+def train(model, iterator, optimizer, criterion, loss_type = 'order'):
 
     epoch_loss = 0
     epoch_order_loss = 0
     epoch_centered_normal_loss = 0
+    epoch_beta_dist_loss = 0
+    epoch_stdev_loss = 0
     epoch_acc = 0
+    epoch_mean = 0
+    epoch_std = 0
 
     model.train()
     for i,batch in enumerate(iterator):
-        optimizer.zero_grad()
         predictions = model(batch.Description[0]).squeeze(1)
-
         order_loss = same_order_loss(predictions,batch.Rank)
-        centered_normal_loss = criterion(predictions,(torch.randn_like(predictions))).pow(2)
-        loss = order_loss#+centered_normal_loss
+
+        if loss_type == 'order':
+            loss = order_loss
+
+        elif loss_type == 'orderandstdev':
+            stdev_loss = torch.abs(1-torch.std(predictions))
+            mean_loss = torch.abs(torch.mean(predictions))
+            if torch.isnan(stdev_loss):
+                loss = order_loss
+            else:
+                loss = order_loss+stdev_loss+mean_loss
+
+        elif loss_type == 'orderandcenterednormal':
+            centered_normal_loss = criterion(torch.sort(predictions).values,torch.abs(torch.sort(torch.randn_like(predictions)).values))
+            if torch.isnan(centered_normal_loss).any():
+                loss = order_loss
+            else:
+                loss = order_loss+centered_normal_loss
+
+        elif loss_type == 'orderandbeta':
+            distribution = torch.distributions.beta.Beta(torch.tensor([1.2],dtype=torch.float32),torch.tensor([4],dtype=torch.float32)).sample(predictions.size()).squeeze(1)
+            distribution = 1-distribution
+            beta_dist_loss = criterion(torch.sort(predictions).values,torch.sort(distribution).values)
+            if torch.isnan(beta_dist_loss).any():
+                loss = order_loss
+            else:
+                loss = order_loss+beta_dist_loss
+
+
         loss.backward()
         optimizer.step()
         model.zero_grad()
@@ -33,10 +63,11 @@ def train(model, iterator, optimizer, criterion):
             optimizer.step()               # Now we can do an optimizer step
             model.zero_grad()
         '''
+        epoch_mean += torch.mean(predictions).item()
+        epoch_std += torch.std(predictions).item()
         epoch_order_loss += order_loss.item()
-        epoch_centered_normal_loss += centered_normal_loss.item()
         epoch_loss += loss.item()
-    return epoch_loss / len(iterator), epoch_order_loss / len(iterator), epoch_centered_normal_loss / len(iterator)
+    return epoch_loss / len(iterator), epoch_order_loss / len(iterator), epoch_mean / len(iterator), epoch_std / len(iterator)
 
 def test(window,model, iterator):
 
@@ -55,11 +86,15 @@ def test(window,model, iterator):
 
 
 def same_order_loss(output,target):
-        x = -((output[0]-output[1])*(target[0]-target[1])) #positive num if wrong order, negative num if correct order
-        loss = torch.relu(x).pow(2)#(x*torch.sigmoid(x))*torch.exp(x) #SiLU times e^x provides high motivation to make sure all rankings are in the correct order or at least close to it, but also pushes the ones in the correct order a little bit apart as well. This outward pressure on the ranking distribution is countered by the KL Divergence loss on a normal distribution, keeping the distribution centered and pressuring it to come down to a variance of 1
+        reshaped_prediction = output.view(torch.div(len(output),2),2)
+        reshaped_target = target.view(torch.div(len(target),2),2)
+        #This reshaping takes the pairwise batch data in format: [[example1left][example1right][example2left][example2right]] and reshapes it to [[example1left,example1right],[example2left,example2right]]
+
+        x = -((reshaped_prediction[:,0]-reshaped_prediction[:,1])*(reshaped_target[:,0]-reshaped_target[:,1])) #This function takes all of the pairwise comparisons and outputs a positive num if wrong order, negative num if correct order
+        loss = torch.mean(torch.relu(x))#This function strongly punishes any incorrectly ranked items, while allowing correctly-ranked items to move around at will in the ranking system. It also motivates the rankings to be as close to each other as possible and confine their distribution, because the smaller the difference between rankings, the smaller the loss. The final step takes the mean of all the batched examples, which amounts to half the number of the actual tensor batch dimensions (because pairs are passed in sequential batches)
         return(loss)
 
-def Trainer(window, Listings, features=10):
+def Trainer(window, Listings):
     window.StatusText.setText('Building Training Dataset')
     window.ProgressBar.setRange(0, 100)
     window.ProgressBar.setValue(0)
@@ -95,8 +130,6 @@ def Trainer(window, Listings, features=10):
     include_lengths=None,
     use_vocab=None,
     batch_first = True,
-
-    #default is torch.long, fine for integer representations of words but not 0-1 ranking
     dtype=torch.float)
 
     Fields = [('Description', DescriptionField),('Rank', RankField),('SortKey', SortField)]
@@ -125,7 +158,7 @@ def Trainer(window, Listings, features=10):
 
     train_iterator = torchtext.data.Iterator(
         trainset,
-        batch_size = 2,
+        batch_size = 2, #MUST BE A DIVISOR OF THE ITERATIVE TRAINSET NUMBER
         device = device,
         sort_key = lambda x: int(x.SortKey),
         sort=True
@@ -135,7 +168,7 @@ def Trainer(window, Listings, features=10):
 
     test_iterator = torchtext.data.Iterator(
         dataset,
-        batch_size = 20,
+        batch_size = 100,
         device = device,
         sort_key=lambda x: len(x.Description)
         )#sort by the length of the job description, that way we group
@@ -146,8 +179,8 @@ def Trainer(window, Listings, features=10):
 
     INPUT_DIM = len(DescriptionField.vocab)
     EMBEDDING_DIM = 50 # when we turned our tokens into vectors, this was the length of the vector
-    N_FILTERS = features # how many features the convolutions learn
-    FILTER_SIZES = [2,3,4,5]#,5,5,5,5,5,5]
+    N_FILTERS = ceil(len(trainset)/1000) # how many features the convolutions learn
+    FILTER_SIZES = [1,2,3,4]#,5,5,5,5,5,5]
     DILATION_SIZES = [1,1,1,1]#,2,4,8,16,32,64]
     OUTPUT_DIM = 1
     DROPOUT = 0.0
@@ -172,50 +205,64 @@ def Trainer(window, Listings, features=10):
     except:
         print('no previously existing trained model')
     model = model.to(device)
-    criterion = nn.KLDivLoss(reduction='batchmean')
+    criterion = nn.MSELoss()#KLDivLoss(reduction='batchmean')
     criterion.to(device)
 
+
+    def ReRank_Jobs(window):
+        window.StatusText.setText('Ranking Jobs')
+        window.ProgressBar.setRange(0, len(test_iterator))
+        window.ProgressBar.setValue(0)
+
+        test_result = test(window,model, test_iterator)
+
+        PredictedPlaintextListingsandRanks = []
+
+
+        window.StatusText.setText('Writing Ranked Jobs')
+        window.ProgressBar.setRange(0, len(test_result))
+        window.ProgressBar.setValue(0)
+
+        # Rank all the jobs in the original listing text
+
+        #Re-order the rankings from the prediction step
+        test_result_df = pd.DataFrame(test_result)
+        test_result_df.sort_values(by=[2],inplace=True)
+        test_result_df.reset_index(drop=True)
+        Listings['Rating']= test_result_df[1].tolist()
+
+        PredictedPlaintextListingsandRanks = []
+        #for i,listing in enumerate(test_result):
+        #    window.ProgressBar.setValue(i+1)
+        #    location = int(listing[2].item())
+        #    Listings['Rating'][location] = listing[1]
+
+        #Re-order the AI-ranked jobs
+        tempListings = pd.DataFrame(Listings)
+        tempListings.sort_values(by=['Rating'],inplace=True, ascending=False)
+        tempListings.reset_index(drop=True)
+        tempListings.to_csv('Listings.csv',index=False)
+        return window
+
+
     window.StatusText.setText('Training the Neural Net')
-    window.ProgressBar.setRange(0, 1)
+    window.ProgressBar.setRange(0, 10*N_FILTERS)
     window.ProgressBar.setValue(0)
     epoch = 0
     train_loss = 10e10
-    while train_loss != 0 and epoch < 50*features:
-        train_loss, train_order_loss, train_centered_loss = train(model, train_iterator, optimizer, criterion)
-        print(train_loss,train_order_loss,train_centered_loss)
+    train_order_loss = 10e10
+
+    while train_order_loss != 0:# and epoch < 10*N_FILTERS:
+        train_loss, train_order_loss, train_mean, train_std = train(model, train_iterator, optimizer, criterion,loss_type='order')
+        print(train_loss,train_order_loss,train_mean,train_std)
+
         torch.save(model.state_dict(), 'RankPrediction-model.pkl')
         epoch += 1
-        #window.ProgressBar.setValue(epoch+1)
+        if epoch % 50 == 0:
+            window  = ReRank_Jobs(window)
+            window.StatusText.setText('Training the Neural Net')
+            window.ProgressBar.setRange(0, 10*N_FILTERS)
+            window.ProgressBar.setValue(0)
+        #window.ProgressBar.setValue(epoch)
 
-    window.StatusText.setText('Ranking Jobs')
-    window.ProgressBar.setRange(0, len(test_iterator))
-    window.ProgressBar.setValue(0)
-
-    test_result = test(window,model, test_iterator)
-
-    PredictedPlaintextListingsandRanks = []
-
-
-    window.StatusText.setText('Writing Ranked Jobs')
-    window.ProgressBar.setRange(0, len(test_result))
-    window.ProgressBar.setValue(0)
-
-    # Rank all the jobs in the original listing text
-
-    #Re-order the rankings from the prediction step
-    test_result_df = pd.DataFrame(test_result)
-    test_result_df.sort_values(by=[2],inplace=True)
-    test_result_df.reset_index(drop=True)
-    Listings['Rating']= test_result_df[1].tolist()
-
-    PredictedPlaintextListingsandRanks = []
-    #for i,listing in enumerate(test_result):
-    #    window.ProgressBar.setValue(i+1)
-    #    location = int(listing[2].item())
-    #    Listings['Rating'][location] = listing[1]
-
-    #Re-order the AI-ranked jobs
-    tempListings = pd.DataFrame(Listings)
-    tempListings.sort_values(by=['Rating'],inplace=True, ascending=False)
-    tempListings.reset_index(drop=True)
-    tempListings.to_csv('Listings.csv',index=False)
+    ReRank_Jobs(window)
