@@ -184,7 +184,7 @@ def Trainer(window, Listings):
     DILATION_SIZES = [1,1,1,1]#,2,4,8,16,32,64]
     OUTPUT_DIM = 1
     DROPOUT = 0.0
-    PAD_IDX = DescriptionField.voca4.stoi[DescriptionField.pad_token]
+    PAD_IDX = DescriptionField.vocab.stoi[DescriptionField.pad_token]
 
     model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, DILATION_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
 
