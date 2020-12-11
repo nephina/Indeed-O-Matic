@@ -1,5 +1,6 @@
 #dirs to ignore
 __pycache__/
+.vector_cache
 
 #files to ignore
 *.pkl

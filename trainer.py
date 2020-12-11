@@ -6,7 +6,7 @@ import numpy as np
 from math import ceil
 import pandas as pd
 import re
-from model import CNN
+from model import CNNSingleLayer
 
 def train(model, iterator, optimizer, criterion, loss_type = 'order'):
 
@@ -28,15 +28,14 @@ def train(model, iterator, optimizer, criterion, loss_type = 'order'):
             loss = order_loss
 
         elif loss_type == 'orderandstdev':
-            stdev_loss = torch.abs(1-torch.std(predictions))
-            mean_loss = torch.abs(torch.mean(predictions))
+            stdev_loss = (1-torch.std(predictions)).pow(2)
             if torch.isnan(stdev_loss):
                 loss = order_loss
             else:
-                loss = order_loss+stdev_loss+mean_loss
+                loss = order_loss+stdev_loss
 
         elif loss_type == 'orderandcenterednormal':
-            centered_normal_loss = criterion(torch.sort(predictions).values,torch.abs(torch.sort(torch.randn_like(predictions)).values))
+            centered_normal_loss = criterion(torch.sort(predictions).values,torch.sort(torch.randn_like(predictions)).values)
             if torch.isnan(centered_normal_loss).any():
                 loss = order_loss
             else:
@@ -91,10 +90,11 @@ def same_order_loss(output,target):
         #This reshaping takes the pairwise batch data in format: [[example1left][example1right][example2left][example2right]] and reshapes it to [[example1left,example1right],[example2left,example2right]]
 
         x = -((reshaped_prediction[:,0]-reshaped_prediction[:,1])*(reshaped_target[:,0]-reshaped_target[:,1])) #This function takes all of the pairwise comparisons and outputs a positive num if wrong order, negative num if correct order
-        loss = torch.mean(torch.relu(x))#This function strongly punishes any incorrectly ranked items, while allowing correctly-ranked items to move around at will in the ranking system. It also motivates the rankings to be as close to each other as possible and confine their distribution, because the smaller the difference between rankings, the smaller the loss. The final step takes the mean of all the batched examples, which amounts to half the number of the actual tensor batch dimensions (because pairs are passed in sequential batches)
+
+        loss = torch.mean(torch.relu(x))#This function punishes any incorrectly ranked items, while allowing correctly-ranked items to move around at will in the ranking system.
         return(loss)
 
-def Trainer(window, Listings):
+def trainer(window, Listings):
     window.StatusText.setText('Building Training Dataset')
     window.ProgressBar.setRange(0, 100)
     window.ProgressBar.setValue(0)
@@ -122,7 +122,7 @@ def Trainer(window, Listings):
     )
 
 
-    # This needs to be kept with the data. The first reason is that the pairs of positive and negative pairwise ranked examples need to be kept in exactly the same order and the iterator doesn't care what order it loads them in unless you tell it. The second is that we can't just write the big chunk of words that have been cleaned, lowercased, and tokenized to a new file, we want to apply a rank to the original text data. So we need to know what rank in the cleaned and tokenized data went to which listing in the original job listing plaintext. This also helps to speed up the process since we don't need to convert the vectorized words back into text.
+    # This needs to be kept with the data. The first reason is that the pairs of positive and negative pairwise ranked examples need to be kept in exactly the same order and the iterator doesn't care what order it loads them in unless you tell it. The second is that we can't just write the big chunk of words that have been cleaned, lowercased, and tokenized to a new file, we want to apply a rank to the original text data in all its unformatted, messy glory. So we need to know what rank in the cleaned and tokenized data went to which listing in the original job listing plaintext. This also means we're speeding up the process since we don't need to convert the vectorized token descriptions back into plaintext.
 
     SortField = torchtext.data.Field(
     sequential=False,
@@ -139,18 +139,9 @@ def Trainer(window, Listings):
     trainset = torchtext.data.TabularDataset('Data/RankedPairs.csv','CSV',skip_header=True,fields = Fields)
     window.ProgressBar.setValue(80)
 
-    '''
-    The beauty of the GloVe vocabulary model is that it has been trained to "group" certain words with other words
-    so that meaning is approximated in numerical format. We are using the 50-dimensional version, which means there
-    are 50 dimensions in which one word can be "similar" to any other word. So for instance, if the word 'dog' were
-    represented in its 34th dimension with a floating point of 0.893833, you would expect to find that the
-    34th dimension of the word 'puppy' was close to that numerical value. In this way, the neural network can learn to
-    approximate meaning, without having to define absurdly complex almost step-wise functions for randomly-assigned
-    word vectors.
-    '''
-    DescriptionField.build_vocab(dataset, max_size = 40000, vectors='glove.6B.50d') #max 30,000 words/tokens
-    #print('Unique tokens in Description vocabulary: {}'.format(len(DescriptionField.vocab)))
-    #print(DescriptionField.vocab.itos[2:102]) #print the most popular 100 tokens (the first two are the "unknown" and the "padding" tokens)
+    DescriptionField.build_vocab(dataset, max_size = 20000, min_freq = 5) #max 30,000 words/tokens
+    print('Unique tokens in Description vocabulary: {}'.format(len(DescriptionField.vocab)))
+    print(DescriptionField.vocab.itos[-100:]) #print the least popular 100 tokens (the first two are the "unknown" and the "padding" tokens)
 
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = torch.device('cpu')
@@ -158,13 +149,11 @@ def Trainer(window, Listings):
 
     train_iterator = torchtext.data.Iterator(
         trainset,
-        batch_size = 2, #MUST BE A DIVISOR OF THE ITERATIVE TRAINSET NUMBER
+        batch_size = len(trainset), #MUST BE A MULTIPLE OF 2
         device = device,
         sort_key = lambda x: int(x.SortKey),
         sort=True
-        #sort_key=lambda x: len(x.Description)
-        )#sort by the length of the job description, that way we group
-                            # similar-length job descriptions together, avoiding having too much padding on the ends
+        ) #sort it by the sortkey; in other words, tell it to not shuffle them at all
 
     test_iterator = torchtext.data.Iterator(
         dataset,
@@ -178,38 +167,38 @@ def Trainer(window, Listings):
     #Define the net characteristics
 
     INPUT_DIM = len(DescriptionField.vocab)
-    EMBEDDING_DIM = 50 # when we turned our tokens into vectors, this was the length of the vector
-    N_FILTERS = ceil(len(trainset)/400) # how many features the convolutions learn
-    FILTER_SIZES = [1,2,3,4]#,5,5,5,5,5,5]
-    DILATION_SIZES = [1,1,1,1]#,2,4,8,16,32,64]
+    EMBEDDING_DIM = 1 # when we turned our tokens into vectors, this was the length of the vector
+    N_FILTERS =  1#ceil(len(trainset)/500) # how many features the convolutions learn
+    FILTER_SIZES = [1]
+    DILATION_SIZES = [1]
     OUTPUT_DIM = 1
-    DROPOUT = 0.0
+    DROPOUT = 0.5
+
+    UNK_IDX = DescriptionField.vocab.stoi[DescriptionField.unk_token]
     PAD_IDX = DescriptionField.vocab.stoi[DescriptionField.pad_token]
 
-    model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, DILATION_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
+    model = CNNSingleLayer(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, DILATION_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
 
     pretrained_embeddings = DescriptionField.vocab.vectors
 
-    model.embedding.weight.data.copy_(pretrained_embeddings)
-
-    UNK_IDX = DescriptionField.vocab.stoi[DescriptionField.unk_token]
+    #model.embedding.weight.data.copy_(pretrained_embeddings)
 
     model.embedding.weight.data[UNK_IDX] = torch.zeros(EMBEDDING_DIM)
     model.embedding.weight.data[PAD_IDX] = torch.zeros(EMBEDDING_DIM)
 
-    import torch.optim as optim
-
-    optimizer = optim.Adam(model.parameters())
     try:
         model.load_state_dict(torch.load('RankPrediction-model.pkl'))
     except:
         print('no previously existing trained model')
     model = model.to(device)
+    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+    optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad == True],lr=0.1)
+
     criterion = nn.MSELoss()#KLDivLoss(reduction='batchmean')
     criterion.to(device)
 
 
-    def ReRank_Jobs(window):
+    def rerank_jobs(window):
         window.StatusText.setText('Ranking Jobs')
         window.ProgressBar.setRange(0, len(test_iterator))
         window.ProgressBar.setValue(0)
@@ -251,18 +240,62 @@ def Trainer(window, Listings):
     epoch = 0
     train_loss = 10e10
     train_order_loss = 10e10
+    train_std = 0
+
+    while (train_order_loss != 0) or (1-train_std > 0.01):
+
+        # resort the paired examples to mix up the data
+        sort_key = [x for x in range(len(trainset))]
+        sort_key = np.reshape(sort_key,(-1,2))
+        np.random.shuffle(sort_key)
+        sort_key = np.reshape(sort_key,(-1))
+        for i in range(int(len(trainset)/2)):
+            trainset.examples[(2*i)].SortKey = sort_key[2*i]
+            trainset.examples[(2*i)+1].SortKey = sort_key[(2*i)+1]
+        train_iterator = torchtext.data.Iterator(
+        trainset,
+        batch_size = len(trainset), #MUST BE A MULTIPLE OF 2
+        device = device,
+        sort_key = lambda x: int(x.SortKey),
+        sort=True)
+
+        train_loss, train_order_loss, train_mean, train_std = train(model, train_iterator, optimizer, criterion,loss_type='orderandstdev')
+        print(train_loss/(train_std+1.0e-25),train_order_loss,train_mean,train_std)
+
+        torch.save(model.state_dict(), 'RankPrediction-model.pkl')
+        epoch += 1
+        if epoch % 50 == 0:
+            print('Reranking jobs')
+            window  = rerank_jobs(window)
+            window.StatusText.setText('Training the Neural Net')
+            window.ProgressBar.setRange(0, 10*N_FILTERS)
+            window.ProgressBar.setValue(0)
+        #window.ProgressBar.setValue(epoch)\
+
+    rerank_jobs(window)
+    '''
+    train_iterator = torchtext.data.Iterator(
+        trainset,
+        batch_size = len(trainset), #MUST BE A MULTIPLE OF 2
+        device = device,
+        sort_key = lambda x: int(x.SortKey),
+        sort=True
+        ) #sort it by the sortkey; in other words, tell it to not shuffle them at all
+    train_order_loss = 10e10
 
     while train_order_loss != 0:# and epoch < 10*N_FILTERS:
-        train_loss, train_order_loss, train_mean, train_std = train(model, train_iterator, optimizer, criterion,loss_type='order')
+        train_loss, train_order_loss, train_mean, train_std = train(model, train_iterator, optimizer, criterion,loss_type='orderandstdev')
         print(train_loss,train_order_loss,train_mean,train_std)
 
         torch.save(model.state_dict(), 'RankPrediction-model.pkl')
         epoch += 1
         if epoch % 50 == 0:
-            window  = ReRank_Jobs(window)
+            print('Reranking jobs')
+            window  = rerank_jobs(window)
             window.StatusText.setText('Training the Neural Net')
             window.ProgressBar.setRange(0, 10*N_FILTERS)
             window.ProgressBar.setValue(0)
         #window.ProgressBar.setValue(epoch)
 
-    ReRank_Jobs(window)
+    rerank_jobs(window)
+    '''
