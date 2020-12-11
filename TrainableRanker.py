@@ -149,7 +149,7 @@ def Update_Step_State(preference):
         Pairwise_Ranked_Listings.append([DescriptionAndRank['Description'][listing_indices[1]],1])
     TotalSelectionsCount[0] += 1
     window.ProgressBar.setValue(TotalSelectionsCount[0])
-    if TotalSelectionsCount[0] >= 1:
+    if TotalSelectionsCount[0] >= 50:
         window.LeftJobListing.setPlainText('')
         window.RightJobListing.setPlainText('')
         Run_AI_Training()

@@ -181,8 +181,7 @@ def write_to_csv(positions):
         print('Nothing to write to file')
 
 def scrape_jobs(position,location,list_of_positions):
-    webpage,html_doc = validate_url('https://www.indeed.com/jobs?q='+position
-                                    +'&l='+location+'&start=0')
+    webpage,html_doc = validate_url('https://www.indeed.com/jobs?q='+position+'&l='+location+'&start=0')
     current_search_positions = search_job_page(position,location,webpage,
         html_doc,list_of_positions)
     if current_search_positions:
