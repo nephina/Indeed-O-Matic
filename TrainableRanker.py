@@ -231,7 +231,7 @@ def Get_Topend_Close_Pair():
     global Listings
     Listings.sort_values(by=['Rating'],inplace=True,ascending=False)
     listing_indices = [None,None]
-    listing_indices[0] = random.randint(0,200)
+    listing_indices[0] = random.randint(0,int((len(Listings)/20)))
     listing_indices[1] = listing_indices[0]+1
     return Listings.iloc[listing_indices[0]],Listings.iloc[listing_indices[1]],listing_indices
 

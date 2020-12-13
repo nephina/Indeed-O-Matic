@@ -86,8 +86,9 @@ def test(window,model, iterator):
 
 
 def same_order_loss(output,target):
-        reshaped_prediction = output.view(torch.div(len(output),2),2)
-        reshaped_target = target.view(torch.div(len(target),2),2)
+        n_pairs = int(torch.true_divide(len(output),2).item())
+        reshaped_prediction = output.view(n_pairs,2)
+        reshaped_target = target.view(n_pairs,2)
         #This reshaping takes the pairwise batch data in format: [[example1left][example1right][example2left][example2right]] and reshapes it to [[example1left,example1right],[example2left,example2right]]
 
         x = -((reshaped_prediction[:,0]-reshaped_prediction[:,1])*(reshaped_target[:,0]-reshaped_target[:,1])) #This function takes all of the pairwise comparisons and outputs a positive num if wrong order, negative num if correct order
@@ -252,7 +253,7 @@ def Trainer(window, Listings):
     train_loss = 10e10
     train_order_loss = 10e10
 
-    while train_order_loss != 0:# and epoch < 10*N_FILTERS:
+    while train_order_loss != 0 or abs(1-train_std)>0.1:
         train_loss, train_order_loss, train_mean, train_std = train(model, train_iterator, optimizer, criterion,loss_type='order')
         print(train_loss,train_order_loss,train_mean,train_std)
 

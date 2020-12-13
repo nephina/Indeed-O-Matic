@@ -1,6 +1,9 @@
 #dirs to ignore
 __pycache__/
+venv/
 
 #files to ignore
 *.pkl
 *.csv
+.vector_cache
+Listings*
