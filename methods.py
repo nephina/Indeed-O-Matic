@@ -3,7 +3,8 @@ import urllib.request as ur
 import csv
 import pandas
 import re
-
+from time import sleep
+import random
 
 class Listing:
 
@@ -160,14 +161,25 @@ def search_job_page(position,location,webpage,html_doc,list_of_positions):
         return False
 
 def validate_url(url):
-    try:
-        response = ur.urlopen(url)
-        html_doc = response.read()
-        webpage = bs(html_doc, 'lxml')
-        return webpage,html_doc
+    worked = False
+    tries = 0
+    sleep(random.uniform(1,3))
+    while worked == False and tries < 5:
+        try:
+            response = ur.urlopen(url)
+            html_doc = response.read()
+            webpage = bs(html_doc, 'lxml')
+            if len(webpage) == 3:
+                worked=True
+                return webpage,html_doc
+            else:
+                sleep(random.uniform(1,3))
+                tries+=1
 
-    except:
-        print('\nFailed to open:\n'+url+'\n')
+        except:
+            print('\nFailed to open:\n'+url+'\n')
+            break
+    print('\nFailed to open:\n'+url+'\n')
 
 def write_to_csv(positions):
     try:
@@ -181,7 +193,7 @@ def write_to_csv(positions):
         print('Nothing to write to file')
 
 def scrape_jobs(position,location,list_of_positions):
-    webpage,html_doc = validate_url('https://www.indeed.com/jobs?q='+position+'&l='+location+'&start=0')
+    webpage,html_doc = validate_url('https://www.indeed.com/jobs?q='+position+'&l='+location)
     current_search_positions = search_job_page(position,location,webpage,html_doc,list_of_positions)
     if current_search_positions:
         for row in current_search_positions:

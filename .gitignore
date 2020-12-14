@@ -1,9 +1,10 @@
 #dirs to ignore
 __pycache__/
 venv/
+.vector_cache/
 
 #files to ignore
 *.pkl
 *.csv
-.vector_cache
+*.ipynb
 Listings*

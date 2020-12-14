@@ -33,8 +33,9 @@ elif not old_positions:
                            'Summary','URL','SearchPosition','SearchLocation',
                            'Rating'])
 
-for position in SEARCH_POSITIONS:
-    for location in SEARCH_LOCATIONS:
+
+for location in SEARCH_LOCATIONS:
+    for position in SEARCH_POSITIONS:
         scrape_jobs(position,location,list_of_positions)
 
 import TrainableRanker
