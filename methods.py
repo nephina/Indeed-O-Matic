@@ -178,8 +178,10 @@ def validate_url(url):
 
         except:
             print('\nFailed to open:\n'+url+'\n')
+            return None, None
             break
     print('\nFailed to open:\n'+url+'\n')
+    return None, None
 
 def write_to_csv(positions):
     try:
@@ -194,16 +196,19 @@ def write_to_csv(positions):
 
 def scrape_jobs(position,location,list_of_positions):
     webpage,html_doc = validate_url('https://www.indeed.com/jobs?q='+position+'&l='+location)
-    current_search_positions = search_job_page(position,location,webpage,html_doc,list_of_positions)
-    if current_search_positions:
-        for row in current_search_positions:
-            list_of_positions.append(row)
-        print('\nwriting positions from search of \"'+position.replace(
-            '+', ' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
-        write_to_csv(current_search_positions)
-    else:
-        print('No positions to write from search of \"'+position.replace(
-            '+',' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
+    try:
+        current_search_positions = search_job_page(position,location,webpage,html_doc,list_of_positions)
+        if current_search_positions:
+            for row in current_search_positions:
+                list_of_positions.append(row)
+            print('\nwriting positions from search of \"'+position.replace(
+                '+', ' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
+            write_to_csv(current_search_positions)
+        else:
+            print('No positions to write from search of \"'+position.replace(
+                '+',' ')+'\" in \"'+location.replace('+', ' ')+'\"\n')
+    except:
+        pass
 
 
 def read_listings():
