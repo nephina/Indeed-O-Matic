@@ -20,4 +20,4 @@ torch==1.7.1
 torchtext==0.8.1
 tqdm==4.54.1
 typing-extensions==3.7.4.3
-urllib3==1.26.2
+urllib3==1.26.3
