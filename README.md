@@ -8,6 +8,7 @@ First make sure you have all the relevant packages:
 
 ```
 $ pip install bs4 urllib csv pandas re torch torchtext nltk scikit-learn numpy PyQt5
+$ sudo apt-get install python3-lxml
 ```
 
 {% hint style="info" %}
